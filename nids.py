@@ -2,9 +2,7 @@
 
 import json 
 import argparse 
-import dpkt
 import binascii
-import socket
 import scapy.all as scapy
 import copy
 import base64
@@ -24,13 +22,31 @@ def parse_args():
     pcap_file = args.pcap
     return pcap_file
 
-def find_attack(data):
+def write_json(atk, pkt):
+    vals = {
+        "timestamp": int(pkt.time),
+        "source": {
+            "mac_address": getattr(pkt["Ethernet"], "src"),
+            "ipv4_address": getattr(pkt["IP"], "src"),
+            "tcp_port": getattr(pkt["TCP"], "sport")
+        },
+        "target": {
+            "mac_address": getattr(pkt["Ethernet"], "dst"),
+            "ipv4_address": getattr(pkt["IP"], "src"),
+            "tcp_port": getattr(pkt["TCP"], "dport")
+        },
+        "attack": atk
+    }
+    json_vals = json.dumps(vals)
+    print(json_vals)
+
+def find_attack(data, pkt):
     if AT1 in data:
-        print("attack 1 found")
+        write_json(1, pkt)
     if AT2 in data:
-        print("attack 2 found")
+        write_json(2, pkt)
     if AT3 in data:
-        print("attack 3 found") 
+        write_json(3, pkt)
 
 def parse_pcap(pcap_file): 
     packets = scapy.PcapReader(pcap_file)
@@ -54,16 +70,15 @@ def parse_pcap(pcap_file):
             if val.haslayer("Raw"):
                 off = getattr(val["IP"], "frag")
                 data = val["Raw"].load
-                off_list[off] = data
+                off_list[off] = [data, val]
         if len(off_list) == 1:
-            find_attack(off_list[0])
+            find_attack(off_list[0][0], off_list[0][1])
         else:
             highest_val = sorted(off_list)[-1]
             data = b''
             for i in range(1, highest_val+1):
-                data = data + off_list[i]
-            print(data)
-            find_attack(data)
+                data = data + off_list[i][0]
+            find_attack(data, off_list[1][1])
 
 
 def main():
