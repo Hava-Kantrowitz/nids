@@ -41,16 +41,12 @@ def write_json(atk, pkt):
     print(json_vals)
 
 def find_attack(data, pkt):
-    print(pkt)
     if AT1 in data:
-        print("attack 1 found")
-        #write_json(1, pkt)
+        write_json(1, pkt)
     if AT2 in data:
-        print("attack 2 found")
-        #write_json(2, pkt)
+        write_json(2, pkt)
     if AT3 in data:
-        print("attack 3 found")
-        #write_json(3, pkt)
+        write_json(3, pkt)
 
 def parse_pcap(pcap_file): 
     packets = scapy.PcapReader(pcap_file)
@@ -83,8 +79,7 @@ def parse_pcap(pcap_file):
                 data = val["Raw"].load
                 off_list[off] = [data, val]
         if len(off_list) == 1:
-            print(key) 
-            find_attack(str(off_list[0][0].hex()), "unfragmented")
+            find_attack(str(off_list[0][0].hex()), off_list[0][1])
         else:
             highest_val = sorted(off_list)[-1]
             data = str(off_list[highest_val][0].hex())
@@ -92,9 +87,7 @@ def parse_pcap(pcap_file):
             for i in range(highest_val-1, -1, -1):
                 next_pack = str(off_list[i][0].hex())
                 data = next_pack + data[buf_size:]
-            #new_pack = scapy.TCP(data[:20])/scapy.Raw(load=data[20:])
-            #new_data = new_pack["Raw"].load
-            find_attack(data, "fragmented")
+            find_attack(data, off_list[0][1])
 
 
 def main():
